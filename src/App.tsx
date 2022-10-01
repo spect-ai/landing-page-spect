@@ -1,17 +1,14 @@
-import HeroSection from "./modules/1-Hero-Section";
-import About from "./modules/2-About-Spect";
-import SpectVerse from "./modules/3-Spect-Verse";
-import Features from "./modules/4-Features";
-import Footer from "./modules/Footer";
+import { Route, Routes } from "react-router-dom";
+import Form from "./pages/Form";
+import Home from "./pages/Home";
 
 function App() {
   return (
-    <div className="flex flex-col bg-black text-white w-full font-default">
-      <HeroSection />
-      <About />
-      <SpectVerse />
-      <Features />
-      <Footer />
+    <div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/form/:formId" element={<Form />} />
+      </Routes>
     </div>
   );
 }
