@@ -83,13 +83,13 @@ export default function LongText() {
 const Container = styled.div`
   border: 2px solid #ccc;
   border-radius: 0.5rem;
-  padding: 1rem;
+  padding: 0.5rem;
 
   button {
     margin-right: 0.5rem;
     margin-bottom: 0.5rem;
     border: 1px solid #ccc;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
     padding: 0.25rem 0.5rem;
     transition: all 0.2s ease-in-out;
 
