@@ -3,15 +3,20 @@ import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { FormType } from "..";
 import LongText from "../components/LongText/LongText";
-import SingleSelect from "../components/SingleSelect/SingleSelect";
 import { PinkBlur, VioletBlur } from "../modules/1-Hero-Section";
 import Navbar from "../modules/1-Hero-Section/Navbar";
+
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Dropdown from "../components/Select/Select";
+import { AddData } from "../service/collection";
 
 const API_HOST = "http://localhost:8080";
 
 export default function Form() {
   const { formId } = useParams();
   const [form, setForm] = useState<FormType>();
+  const [data, setData] = useState<any>({});
 
   useEffect(() => {
     (async () => {
@@ -24,9 +29,33 @@ export default function Form() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (form) {
+      const tempData: any = {};
+      form.propertyOrder.forEach((propertyId) => {
+        if (
+          ["longText", "shortText", "ethAddress", "user", "date"].includes(
+            form.properties[propertyId].type
+          )
+        ) {
+          tempData[propertyId] = "";
+        } else if (form.properties[propertyId].type === "singleSelect") {
+          // @ts-ignore
+          tempData[propertyId] = form.properties[propertyId].options[0];
+        } else if (
+          ["multiSelect", "user[]"].includes(form.properties[propertyId].type)
+        ) {
+          tempData[propertyId] = [];
+        }
+      });
+      setData(tempData);
+    }
+  }, [form]);
+
   if (form) {
     return (
       <Container>
+        <ToastContainer />
         <div className="header bg-purple bg-opacity-5">
           <div>
             <VioletBlur className="absolute top-0 left-0" />
@@ -39,14 +68,47 @@ export default function Form() {
         <div className="form flex-1">
           {form.propertyOrder.map((propertyId) => (
             <div key={propertyId} className="field">
-              <h1>{form.properties[propertyId].name}</h1>
-              {form.properties[propertyId].type === "shortText" && <input />}
-              {form.properties[propertyId].type === "longText" && <LongText />}
-              {form.properties[propertyId].type === "singleSelect" && (
-                <SingleSelect
-                  options={form.properties[propertyId].options as any}
-                />
+              {form.properties[propertyId].isPartOfFormView && (
+                <h1>{form.properties[propertyId].name}</h1>
               )}
+              {form.properties[propertyId].isPartOfFormView &&
+                form.properties[propertyId].type === "shortText" && (
+                  <input
+                    value={data?.[propertyId]}
+                    onChange={(e) =>
+                      setData({ ...data, [propertyId]: e.target.value })
+                    }
+                  />
+                )}
+              {form.properties[propertyId].isPartOfFormView &&
+                form.properties[propertyId].type === "longText" && (
+                  <LongText
+                    value={data?.[propertyId]}
+                    onSave={(val) => setData({ ...data, [propertyId]: val })}
+                  />
+                )}
+              {form.properties[propertyId].isPartOfFormView &&
+                form.properties[propertyId].type === "singleSelect" && (
+                  <Dropdown
+                    selected={data?.[propertyId]}
+                    onChange={(value) => {
+                      setData({ ...data, [propertyId]: value });
+                    }}
+                    options={form.properties[propertyId].options as any}
+                    multiple={false}
+                  />
+                )}
+              {form.properties[propertyId].isPartOfFormView &&
+                form.properties[propertyId].type === "multiSelect" && (
+                  <Dropdown
+                    selected={data?.[propertyId]}
+                    onChange={(value) =>
+                      setData({ ...data, [propertyId]: value })
+                    }
+                    options={form.properties[propertyId].options as any}
+                    multiple={true}
+                  />
+                )}
             </div>
           ))}
           <button
@@ -61,6 +123,42 @@ export default function Form() {
               bg-opacity-5
               hover:bg-opacity-25
               duration-700"
+            onClick={async () => {
+              console.log({ data });
+              const res = await AddData(form.id || "", data);
+              console.log({ res });
+              if (res) {
+                toast.success("Data added successfully");
+                // reset data
+                const tempData: any = {};
+                form.propertyOrder.forEach((propertyId) => {
+                  if (
+                    [
+                      "longText",
+                      "shortText",
+                      "ethAddress",
+                      "user",
+                      "date",
+                    ].includes(form.properties[propertyId].type)
+                  ) {
+                    tempData[propertyId] = "";
+                  } else if (
+                    form.properties[propertyId].type === "singleSelect"
+                  ) {
+                    tempData[propertyId] = (
+                      form.properties[propertyId] as any
+                    ).options[0];
+                  } else if (
+                    ["multiSelect", "user[]"].includes(
+                      form.properties[propertyId].type
+                    )
+                  ) {
+                    tempData[propertyId] = [];
+                  }
+                });
+                setData(tempData);
+              }
+            }}
           >
             Submit
           </button>
