@@ -146,10 +146,7 @@ export default function RewardField({ reward, onChange, circleId }: Props) {
                   <Text size="extraLarge" weight="semiBold">
                     Value
                   </Text>
-                  <Input
-                    label=""
-                    units={token?.symbol}
-                    min={0}
+                  <input
                     placeholder="10"
                     type="number"
                     value={value}

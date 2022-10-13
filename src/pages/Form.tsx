@@ -32,8 +32,9 @@ export default function Form({
   const [form, setForm] = useState<FormType>();
   const [data, setData] = useState<any>({});
   const [memberOptions, setMemberOptions] = useState([]);
-  const { isConnected } = useAccount();
   const { disconnect } = useDisconnect();
+
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (form?.parents) {
@@ -86,234 +87,245 @@ export default function Form({
     }
   }, [form]);
 
-  if (form) {
+  if (submitted) {
     return (
-      <>
-        <Container>
-          <ToastContainer />
-          <div className="header bg-purple bg-opacity-5">
-            <div>
-              <VioletBlur className="absolute top-0 left-0" />
-              <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
-              <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
-              <h1>{form?.name}</h1>
-              <p>{form?.description}</p>
-            </div>
-          </div>{" "}
-          <div className="form flex-1">
-            {!connectedUser &&
-              !form.canFillForm &&
-              form.formRoleGating?.length > 0 && (
-                <div className="mb-4">
-                  <h5>
-                    This form is role gated. Please connect your wallet to
-                    access form.
-                  </h5>
-                </div>
-              )}
-            {!connectedUser && (
-              <div className="mb-4">
-                <Connect />
-              </div>
-            )}
-            {connectedUser && (
-              <div className="mb-4">
-                <button
-                  className="
-             px-8
-             py-3
-             rounded-xl
-             text-md
-             text-purple
-             text-bold
-             bg-purple
-             bg-opacity-5
-             hover:bg-opacity-25
-             duration-700"
-                  onClick={async () => {
-                    await fetch(`${API_HOST}/auth/disconnect`, {
-                      method: "POST",
-                      credentials: "include",
-                    });
-                    disconnect();
+      <Container>
+        <div className="header bg-purple bg-opacity-5">
+          <div>
+            <VioletBlur className="absolute top-0 left-0" />
+            <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
+            <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
+            <h1>{form?.name}</h1>
+            <p>{form?.description}</p>
+          </div>
+        </div>
+        <div className="form flex-1">
+          <h1>Form submitted succesfully!</h1>
+        </div>
+        <div className="footer bg-purple bg-opacity-5">
+          <Navbar />
+        </div>
+      </Container>
+    );
+  }
 
-                    localStorage.removeItem("connectorIndex");
-                    setAuthenticationStatus("unauthenticated");
-                    setConnectedUser("");
-                  }}
-                >
-                  Logout
-                </button>
+  if (form && !submitted) {
+    return (
+      <Container>
+        <ToastContainer />
+        <div className="header bg-purple bg-opacity-5">
+          <div>
+            <VioletBlur className="absolute top-0 left-0" />
+            <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
+            <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
+            <h1>{form?.name}</h1>
+            <p>{form?.description}</p>
+          </div>
+        </div>
+        <div className="form flex-1">
+          {!connectedUser &&
+            !form.canFillForm &&
+            form.formRoleGating?.length > 0 && (
+              <div className="mb-4">
+                <h5>
+                  This form is role gated. Please connect your wallet to access
+                  form.
+                </h5>
               </div>
             )}
-            {connectedUser && !form.canFillForm && (
-              <div className="mt-4">
-                <h5>Looks like you dont have access to this form.</h5>
-              </div>
-            )}
-            {form.canFillForm && (
-              <div>
-                {form.propertyOrder.map((propertyId) => (
-                  <div key={propertyId} className="field">
-                    {form.properties[propertyId].isPartOfFormView && (
-                      <h1>{form.properties[propertyId].name}</h1>
-                    )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "shortText" && (
-                        <input
-                          value={data?.[propertyId]}
-                          onChange={(e) =>
-                            setData({ ...data, [propertyId]: e.target.value })
-                          }
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "longText" && (
-                        <LongText
-                          value={data?.[propertyId]}
-                          onSave={(val) =>
-                            setData({ ...data, [propertyId]: val })
-                          }
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "date" && (
-                        <input
-                          type="date"
-                          value={data?.[propertyId]}
-                          onChange={(e) =>
-                            setData({ ...data, [propertyId]: e.target.value })
-                          }
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "number" && (
-                        <input
-                          type="number"
-                          value={data?.[propertyId]}
-                          onChange={(e) => {
-                            setData({
-                              ...data,
-                              [propertyId]: parseFloat(e.target.value),
-                            });
-                          }}
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "singleSelect" && (
-                        <Dropdown
-                          selected={data?.[propertyId]}
-                          onChange={(value) => {
-                            setData({ ...data, [propertyId]: value });
-                          }}
-                          options={form.properties[propertyId].options as any}
-                          multiple={false}
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "multiSelect" && (
-                        <Dropdown
-                          selected={data?.[propertyId]}
-                          onChange={(value) =>
-                            setData({ ...data, [propertyId]: value })
-                          }
-                          options={form.properties[propertyId].options as any}
-                          multiple={true}
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "user" && (
-                        <Dropdown
-                          selected={data?.[propertyId]}
-                          onChange={(value) =>
-                            setData({ ...data, [propertyId]: value })
-                          }
-                          options={memberOptions}
-                          multiple={false}
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "user[]" && (
-                        <Dropdown
-                          selected={data?.[propertyId]}
-                          onChange={(value) =>
-                            setData({ ...data, [propertyId]: value })
-                          }
-                          options={memberOptions}
-                          multiple={true}
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "ethAddress" && (
-                        <input
-                          value={data?.[propertyId]}
-                          onChange={(e) =>
-                            setData({ ...data, [propertyId]: e.target.value })
-                          }
-                        />
-                      )}
-                    {form.properties[propertyId].isPartOfFormView &&
-                      form.properties[propertyId].type === "reward" && (
-                        <RewardField
-                          circleId={form.parents[0].slug}
-                          reward={data?.[propertyId]}
-                          onChange={(value) =>
-                            setData({ ...data, [propertyId]: value })
-                          }
-                        />
-                      )}
-                  </div>
-                ))}
-                <button
-                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-                  onClick={async () => {
-                    console.log({ data });
-                    const res = await AddData(form.id || "", data);
-                    if (res.id) {
-                      toast.success("Form submitted successfully");
-                      // reset data
-                      const tempData: any = {};
-                      form.propertyOrder.forEach((propertyId) => {
-                        if (
-                          [
-                            "longText",
-                            "shortText",
-                            "ethAddress",
-                            "user",
-                            "date",
-                          ].includes(form.properties[propertyId].type)
-                        ) {
-                          tempData[propertyId] = "";
-                        } else if (
-                          form.properties[propertyId].type === "singleSelect"
-                        ) {
-                          tempData[propertyId] = (
-                            form.properties[propertyId] as any
-                          ).options[0];
-                        } else if (
-                          ["multiSelect", "user[]"].includes(
-                            form.properties[propertyId].type
-                          )
-                        ) {
-                          tempData[propertyId] = [];
+          {!connectedUser && (
+            <div className="mb-4">
+              <Connect />
+            </div>
+          )}
+          {connectedUser && (
+            <div className="mb-4">
+              <button
+                className="px-8 py-3rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                onClick={async () => {
+                  await fetch(`${API_HOST}/auth/disconnect`, {
+                    method: "POST",
+                    credentials: "include",
+                  });
+                  disconnect();
+
+                  localStorage.removeItem("connectorIndex");
+                  setAuthenticationStatus("unauthenticated");
+                  setConnectedUser("");
+                }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+          {connectedUser && !form.canFillForm && (
+            <div className="mt-4">
+              <h5>Looks like you dont have access to this form.</h5>
+            </div>
+          )}
+          {form.canFillForm && (
+            <div>
+              {form.propertyOrder.map((propertyId) => (
+                <div key={propertyId} className="field">
+                  {form.properties[propertyId].isPartOfFormView && (
+                    <h1>{form.properties[propertyId].name}</h1>
+                  )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "shortText" && (
+                      <input
+                        value={data?.[propertyId]}
+                        onChange={(e) =>
+                          setData({ ...data, [propertyId]: e.target.value })
                         }
-                      });
-                      setData(tempData);
-                    } else {
-                      toast.error("Error adding data");
-                    }
-                  }}
-                >
-                  Submit
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="footer bg-purple bg-opacity-5">
-            <Navbar />
-          </div>
-        </Container>
-      </>
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "longText" && (
+                      <LongText
+                        value={data?.[propertyId]}
+                        onSave={(val) =>
+                          setData({ ...data, [propertyId]: val })
+                        }
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "date" && (
+                      <input
+                        type="date"
+                        value={data?.[propertyId]}
+                        onChange={(e) =>
+                          setData({ ...data, [propertyId]: e.target.value })
+                        }
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "number" && (
+                      <input
+                        type="number"
+                        value={data?.[propertyId]}
+                        onChange={(e) => {
+                          setData({
+                            ...data,
+                            [propertyId]: parseFloat(e.target.value),
+                          });
+                        }}
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "singleSelect" && (
+                      <Dropdown
+                        selected={data?.[propertyId]}
+                        onChange={(value) => {
+                          setData({ ...data, [propertyId]: value });
+                        }}
+                        options={form.properties[propertyId].options as any}
+                        multiple={false}
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "multiSelect" && (
+                      <Dropdown
+                        selected={data?.[propertyId]}
+                        onChange={(value) =>
+                          setData({ ...data, [propertyId]: value })
+                        }
+                        options={form.properties[propertyId].options as any}
+                        multiple={true}
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "user" && (
+                      <Dropdown
+                        selected={data?.[propertyId]}
+                        onChange={(value) =>
+                          setData({ ...data, [propertyId]: value })
+                        }
+                        options={memberOptions}
+                        multiple={false}
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "user[]" && (
+                      <Dropdown
+                        selected={data?.[propertyId]}
+                        onChange={(value) =>
+                          setData({ ...data, [propertyId]: value })
+                        }
+                        options={memberOptions}
+                        multiple={true}
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "ethAddress" && (
+                      <input
+                        value={data?.[propertyId]}
+                        onChange={(e) =>
+                          setData({ ...data, [propertyId]: e.target.value })
+                        }
+                      />
+                    )}
+                  {form.properties[propertyId].isPartOfFormView &&
+                    form.properties[propertyId].type === "reward" && (
+                      <RewardField
+                        circleId={form.parents[0].slug}
+                        reward={data?.[propertyId]}
+                        onChange={(value) =>
+                          setData({ ...data, [propertyId]: value })
+                        }
+                      />
+                    )}
+                </div>
+              ))}
+              <button
+                className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                onClick={async () => {
+                  console.log({ data });
+                  const res = await AddData(form.id || "", data);
+                  if (res.id) {
+                    toast.success("Form submitted successfully");
+                    // reset data
+                    const tempData: any = {};
+                    form.propertyOrder.forEach((propertyId) => {
+                      if (
+                        [
+                          "longText",
+                          "shortText",
+                          "ethAddress",
+                          "user",
+                          "date",
+                        ].includes(form.properties[propertyId].type)
+                      ) {
+                        tempData[propertyId] = "";
+                      } else if (
+                        form.properties[propertyId].type === "singleSelect"
+                      ) {
+                        tempData[propertyId] = (
+                          form.properties[propertyId] as any
+                        ).options[0];
+                      } else if (
+                        ["multiSelect", "user[]"].includes(
+                          form.properties[propertyId].type
+                        )
+                      ) {
+                        tempData[propertyId] = [];
+                      }
+                    });
+                    setData(tempData);
+                    setSubmitted(true);
+                  } else {
+                    toast.error("Error adding data");
+                  }
+                }}
+              >
+                Submit
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="footer bg-purple bg-opacity-5">
+          <Navbar />
+        </div>
+      </Container>
     );
   }
 }
@@ -344,6 +356,15 @@ const Container = styled.div`
 
   .header {
     width: 100%;
+    @media (max-width: 768px) {
+      padding: 2rem 1rem;
+    }
+    @media (min-width: 768px) and (max-width: 1024px) {
+      padding: 2rem 4rem;
+    }
+    @media (min-width: 1024px) and (max-width: 1280px) {
+      padding: 2rem 12rem;
+    }
     padding: 2rem 24rem;
     display: flex;
     flex-direction: column;
@@ -351,32 +372,41 @@ const Container = styled.div`
 
   .form {
     width: 100%;
+    @media (max-width: 768px) {
+      padding: 2rem 1rem;
+    }
+    @media (min-width: 768px) and (max-width: 1024px) {
+      padding: 2rem 4rem;
+    }
+    @media (min-width: 1024px) and (max-width: 1280px) {
+      padding: 2rem 12rem;
+    }
     padding: 2rem 24rem;
 
     .field {
       margin-bottom: 2rem;
-    }
 
-    h1 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      text-transform: capitalize;
-    }
+      input {
+        width: 100%;
+        border-radius: 0.55rem;
+        border: 1px solid rgb(255, 255, 255, 0.1);
+        width: 100%;
+        color: rgb(255, 255, 255, 0.9);
+        margin-top: 10px;
+        padding: 0.5rem 0.5rem;
+        border-radius: 0.5rem;
+        background-color: rgb(20, 20, 20);
 
-    input {
-      width: 100%;
-      border-radius: 0.55rem;
-      border: 1px solid rgb(255, 255, 255, 0.1);
-      width: 100%;
-      color: rgb(255, 255, 255, 0.9);
-      margin-top: 10px;
-      padding: 0.5rem 0.5rem;
-      border-radius: 0.5rem;
-      background-color: rgb(20, 20, 20);
+        &:focus {
+          outline: none;
+          border: 1px solid #bf5af2;
+        }
+      }
 
-      &:focus {
-        outline: none;
-        border: 1px solid #bf5af2;
+      h1 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        text-transform: capitalize;
       }
     }
 
