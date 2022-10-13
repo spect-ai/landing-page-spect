@@ -23,6 +23,8 @@ export interface FormType {
     slug: string;
   }[];
   defaultView: string;
+  formRoleGating: number[];
+  canFillForm: boolean;
   createdAt: string;
   updatedAt: string;
   id: string;

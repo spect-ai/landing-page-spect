@@ -11,15 +11,34 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from "../components/Select/Select";
 import { AddData } from "../service/collection";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Connect } from "../components/ConnectWallet";
+import { useAccount, useDisconnect } from "wagmi";
+import { useGlobal } from "../context/globalContext";
 
 const API_HOST = "http://localhost:8080";
 
-export default function Form() {
+type Props = {
+  connectedUser: string;
+  setConnectedUser: (connectedUser: string) => void;
+  setAuthenticationStatus: (
+    authenticationStatus: "loading" | "authenticated" | "unauthenticated"
+  ) => void;
+};
+
+export default function Form({
+  connectedUser,
+  setConnectedUser,
+  setAuthenticationStatus,
+}: Props) {
   const { formId } = useParams();
   const [form, setForm] = useState<FormType>();
   const [data, setData] = useState<any>({});
   const [memberOptions, setMemberOptions] = useState([]);
+  const { isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
 
+  console.log(connectedUser);
   useEffect(() => {
     if (form?.parents) {
       console.log({ form: form.parents });
@@ -43,13 +62,15 @@ export default function Form() {
   useEffect(() => {
     (async () => {
       const formData = await (
-        await fetch(`${API_HOST}/collection/v1/slug/${formId}`)
+        await fetch(`${API_HOST}/collection/v1/slug/${formId}`, {
+          credentials: "include",
+        })
       ).json();
 
       console.log({ formData });
       setForm(formData);
     })();
-  }, []);
+  }, [connectedUser]);
 
   useEffect(() => {
     if (form) {
@@ -76,125 +97,180 @@ export default function Form() {
 
   if (form) {
     return (
-      <Container>
-        <ToastContainer />
-        <div className="header bg-purple bg-opacity-5">
-          <div>
-            <VioletBlur className="absolute top-0 left-0" />
-            <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
-            <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
-            <h1>{form?.name}</h1>
-            <p>{form?.description}</p>
-          </div>
-        </div>
-        <div className="form flex-1">
-          {form.propertyOrder.map((propertyId) => (
-            <div key={propertyId} className="field">
-              {form.properties[propertyId].isPartOfFormView && (
-                <h1>{form.properties[propertyId].name}</h1>
-              )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "shortText" && (
-                  <input
-                    value={data?.[propertyId]}
-                    onChange={(e) =>
-                      setData({ ...data, [propertyId]: e.target.value })
-                    }
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "longText" && (
-                  <LongText
-                    value={data?.[propertyId]}
-                    onSave={(val) => setData({ ...data, [propertyId]: val })}
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "date" && (
-                  <DateInput
-                    type="date"
-                    value={data?.[propertyId]}
-                    onChange={(e) =>
-                      setData({ ...data, [propertyId]: e.target.value })
-                    }
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "number" && (
-                  <DateInput
-                    type="number"
-                    value={data?.[propertyId]}
-                    onChange={(e) =>
-                      setData({ ...data, [propertyId]: e.target.value })
-                    }
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "singleSelect" && (
-                  <Dropdown
-                    selected={data?.[propertyId]}
-                    onChange={(value) => {
-                      setData({ ...data, [propertyId]: value });
-                    }}
-                    options={form.properties[propertyId].options as any}
-                    multiple={false}
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "multiSelect" && (
-                  <Dropdown
-                    selected={data?.[propertyId]}
-                    onChange={(value) =>
-                      setData({ ...data, [propertyId]: value })
-                    }
-                    options={form.properties[propertyId].options as any}
-                    multiple={true}
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "user" && (
-                  <Dropdown
-                    selected={data?.[propertyId]}
-                    onChange={(value) =>
-                      setData({ ...data, [propertyId]: value })
-                    }
-                    options={memberOptions}
-                    multiple={false}
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "user[]" && (
-                  <Dropdown
-                    selected={data?.[propertyId]}
-                    onChange={(value) =>
-                      setData({ ...data, [propertyId]: value })
-                    }
-                    options={memberOptions}
-                    multiple={true}
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "ethAddress" && (
-                  <input
-                    value={data?.[propertyId]}
-                    onChange={(e) =>
-                      setData({ ...data, [propertyId]: e.target.value })
-                    }
-                  />
-                )}
-              {form.properties[propertyId].isPartOfFormView &&
-                form.properties[propertyId].type === "reward" && (
-                  <Reward
-                    value={data?.[propertyId]}
-                    onChange={(value) => {
-                      setData({ ...data, [propertyId]: value });
-                    }}
-                  />
-                )}
+      <>
+        <Container>
+          <ToastContainer />
+          <div className="header bg-purple bg-opacity-5">
+            <div>
+              <VioletBlur className="absolute top-0 left-0" />
+              <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
+              <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
+              <h1>{form?.name}</h1>
+              <p>{form?.description}</p>
             </div>
-          ))}
-          <button
-            className="
+          </div>{" "}
+          <div className="form flex-1">
+            {!connectedUser &&
+              !form.canFillForm &&
+              form.formRoleGating?.length > 0 && (
+                <div className="mb-4">
+                  <h5>
+                    This form is role gated. Please connect your wallet to
+                    access form.
+                  </h5>
+                </div>
+              )}
+            {!connectedUser && (
+              <div className="mb-4">
+                <Connect />
+              </div>
+            )}
+            {connectedUser && (
+              <div className="mb-4">
+                <button
+                  className="
+             px-8
+             py-3
+             rounded-xl
+             text-md
+             text-purple
+             text-bold
+             bg-purple
+             bg-opacity-5
+             hover:bg-opacity-25
+             duration-700"
+                  onClick={async () => {
+                    await fetch(`${API_HOST}/auth/disconnect`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    disconnect();
+
+                    localStorage.removeItem("connectorIndex");
+                    setAuthenticationStatus("unauthenticated");
+                    setConnectedUser("");
+                  }}
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+            {connectedUser && !form.canFillForm && (
+              <div className="mt-4">
+                <h5>Looks like you dont have access to this form.</h5>
+              </div>
+            )}
+            {form.canFillForm && (
+              <div>
+                {form.propertyOrder.map((propertyId) => (
+                  <div key={propertyId} className="field">
+                    {form.properties[propertyId].isPartOfFormView && (
+                      <h1>{form.properties[propertyId].name}</h1>
+                    )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "shortText" && (
+                        <input
+                          value={data?.[propertyId]}
+                          onChange={(e) =>
+                            setData({ ...data, [propertyId]: e.target.value })
+                          }
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "longText" && (
+                        <LongText
+                          value={data?.[propertyId]}
+                          onSave={(val) =>
+                            setData({ ...data, [propertyId]: val })
+                          }
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "date" && (
+                        <DateInput
+                          type="date"
+                          value={data?.[propertyId]}
+                          onChange={(e) =>
+                            setData({ ...data, [propertyId]: e.target.value })
+                          }
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "number" && (
+                        <DateInput
+                          type="number"
+                          value={data?.[propertyId]}
+                          onChange={(e) =>
+                            setData({ ...data, [propertyId]: e.target.value })
+                          }
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "singleSelect" && (
+                        <Dropdown
+                          selected={data?.[propertyId]}
+                          onChange={(value) => {
+                            setData({ ...data, [propertyId]: value });
+                          }}
+                          options={form.properties[propertyId].options as any}
+                          multiple={false}
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "multiSelect" && (
+                        <Dropdown
+                          selected={data?.[propertyId]}
+                          onChange={(value) =>
+                            setData({ ...data, [propertyId]: value })
+                          }
+                          options={form.properties[propertyId].options as any}
+                          multiple={true}
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "user" && (
+                        <Dropdown
+                          selected={data?.[propertyId]}
+                          onChange={(value) =>
+                            setData({ ...data, [propertyId]: value })
+                          }
+                          options={memberOptions}
+                          multiple={false}
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "user[]" && (
+                        <Dropdown
+                          selected={data?.[propertyId]}
+                          onChange={(value) =>
+                            setData({ ...data, [propertyId]: value })
+                          }
+                          options={memberOptions}
+                          multiple={true}
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "ethAddress" && (
+                        <input
+                          value={data?.[propertyId]}
+                          onChange={(e) =>
+                            setData({ ...data, [propertyId]: e.target.value })
+                          }
+                        />
+                      )}
+                    {form.properties[propertyId].isPartOfFormView &&
+                      form.properties[propertyId].type === "reward" && (
+                        <Reward
+                          value={data?.[propertyId]}
+                          onChange={(value) => {
+                            setData({ ...data, [propertyId]: value });
+                          }}
+                        />
+                      )}
+                  </div>
+                ))}
+                <button
+                  className="
               px-8
               py-3
               rounded-xl
@@ -205,50 +281,53 @@ export default function Form() {
               bg-opacity-5
               hover:bg-opacity-25
               duration-700"
-            onClick={async () => {
-              console.log({ data });
-              const res = await AddData(form.id || "", data);
-              console.log({ res });
-              if (res) {
-                toast.success("Data added successfully");
-                // reset data
-                const tempData: any = {};
-                form.propertyOrder.forEach((propertyId) => {
-                  if (
-                    [
-                      "longText",
-                      "shortText",
-                      "ethAddress",
-                      "user",
-                      "date",
-                    ].includes(form.properties[propertyId].type)
-                  ) {
-                    tempData[propertyId] = "";
-                  } else if (
-                    form.properties[propertyId].type === "singleSelect"
-                  ) {
-                    tempData[propertyId] = (
-                      form.properties[propertyId] as any
-                    ).options[0];
-                  } else if (
-                    ["multiSelect", "user[]"].includes(
-                      form.properties[propertyId].type
-                    )
-                  ) {
-                    tempData[propertyId] = [];
-                  }
-                });
-                setData(tempData);
-              }
-            }}
-          >
-            Submit
-          </button>
-        </div>
-        <div className="footer bg-purple bg-opacity-5">
-          <Navbar />
-        </div>
-      </Container>
+                  onClick={async () => {
+                    console.log({ data });
+                    const res = await AddData(form.id || "", data);
+                    console.log({ res });
+                    if (res) {
+                      toast.success("Data added successfully");
+                      // reset data
+                      const tempData: any = {};
+                      form.propertyOrder.forEach((propertyId) => {
+                        if (
+                          [
+                            "longText",
+                            "shortText",
+                            "ethAddress",
+                            "user",
+                            "date",
+                          ].includes(form.properties[propertyId].type)
+                        ) {
+                          tempData[propertyId] = "";
+                        } else if (
+                          form.properties[propertyId].type === "singleSelect"
+                        ) {
+                          tempData[propertyId] = (
+                            form.properties[propertyId] as any
+                          ).options[0];
+                        } else if (
+                          ["multiSelect", "user[]"].includes(
+                            form.properties[propertyId].type
+                          )
+                        ) {
+                          tempData[propertyId] = [];
+                        }
+                      });
+                      setData(tempData);
+                    }
+                  }}
+                >
+                  Submit
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="footer bg-purple bg-opacity-5">
+            <Navbar />
+          </div>
+        </Container>
+      </>
     );
   }
 }
