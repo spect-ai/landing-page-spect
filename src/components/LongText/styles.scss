@@ -4,15 +4,15 @@
     margin-top: 0.1em;
   }
 
-  background-color: #fff;
-  color: #1b1b1b;
+  background-color: rgb(20, 20, 20);
+  color: rgb(255, 255, 255, 0.9);
   padding: 1rem;
-  border-radius: 0.5rem;
+  border: 0px solid rgb(255, 255, 255, 0.1);
 
   ul,
   ol {
     padding: 0 1rem;
-    color: #1b1b1b;
+    color: rgb(255, 255, 255, 0.9);
   }
 
   h1,
@@ -51,12 +51,12 @@
 
   blockquote {
     padding-left: 1rem;
-    border-left: 1px solid rgba(#1b1b1b, 0.5);
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
   }
 
   hr {
     border: none;
-    border-top: 1px solid rgba(#1b1b1b, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
     margin: 1rem 0;
   }
 }

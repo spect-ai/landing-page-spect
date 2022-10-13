@@ -29,3 +29,36 @@ export interface FormType {
   updatedAt: string;
   id: string;
 }
+
+export type Registry = {
+  [chainId: string]: NetworkInfo;
+};
+
+export type NetworkInfo = {
+  distributorAddress?: string;
+  name: string;
+  mainnet: boolean;
+  chainId: string;
+  nativeCurrency: string;
+  pictureUrl: string;
+  blockExplorer?: string;
+  provider: string;
+  tokenDetails: { [tokenAddress: string]: Token };
+};
+
+export type Chain = {
+  chainId: string;
+  name: string;
+};
+
+export type Token = {
+  address: string;
+  symbol: string;
+  name: string;
+};
+
+export type Reward = {
+  chain: Chain;
+  token: Token;
+  value: number;
+};

@@ -16,6 +16,7 @@ export default function LongText({ value, onSave }: Props) {
   return (
     <Container>
       <Editor
+        dark={true}
         defaultValue={value}
         onChange={(val) => {
           setcontent(val());
@@ -39,7 +40,7 @@ export default function LongText({ value, onSave }: Props) {
 }
 
 const Container = styled.div`
-  border: 2px solid #ccc;
+  border: 1px solid rgb(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   padding: 0.5rem;
   max-height: 25vh;

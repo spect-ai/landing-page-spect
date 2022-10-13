@@ -48,25 +48,24 @@ const Dropdown: FC<Props> = ({
         }),
         menu: (provided) => ({
           ...provided,
-          backgroundColor: "#FFFFFF",
-          color: "#000000",
+          backgroundColor: "rgb(20,20,20)",
         }),
         control: (provided) => ({
           ...provided,
           height: "100%",
           boxShadow: "none",
-          background: "#FFFFFF",
-          border: "1px solid rgb(20, 20, 20, 0.1) !important",
+          background: "rgb(20,20,20)",
+          border: "1px solid rgb(255, 255, 255, 0.1) !important",
           borderRadius: "8px",
-          padding: "0px",
+          padding: "3px",
         }),
         input: (provided) => ({
           ...provided,
-          color: "#000000",
+          color: "rgb(255,255,255,0.9)",
         }),
         singleValue: (provided) => ({
           ...provided,
-          color: "rgb(20,20,20)",
+          color: "rgb(255,255,255,0.9)",
         }),
         multiValue: (styles) => {
           return {
@@ -95,11 +94,11 @@ const Dropdown: FC<Props> = ({
         option: (provided, state) => ({
           ...provided,
           backgroundColor: state.isFocused
-            ? "rgb(20, 20, 20, 0.1) !important"
+            ? "rgb(255, 255, 255, 0.1) !important"
             : state.isSelected
-            ? "rgb(20, 20, 20, 0.1) !important"
+            ? "rgb(255, 255, 255, 0.1) !important"
             : "transparent",
-          color: "#000000",
+          color: "rgb(255,255,255,0.9)",
           cursor: "pointer",
         }),
       }}

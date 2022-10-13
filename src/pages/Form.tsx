@@ -1,20 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { FormType } from "..";
 import LongText from "../components/LongText/LongText";
-import Reward from "../components/Reward/Reward";
 import { PinkBlur, VioletBlur } from "../modules/1-Hero-Section";
 import Navbar from "../modules/1-Hero-Section/Navbar";
-
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from "../components/Select/Select";
 import { AddData } from "../service/collection";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Connect } from "../components/ConnectWallet";
 import { useAccount, useDisconnect } from "wagmi";
-import { useGlobal } from "../context/globalContext";
+import RewardField from "../components/Reward/Reward";
 
 const API_HOST = "http://localhost:8080";
 
@@ -38,10 +35,8 @@ export default function Form({
   const { isConnected } = useAccount();
   const { disconnect } = useDisconnect();
 
-  console.log(connectedUser);
   useEffect(() => {
     if (form?.parents) {
-      console.log({ form: form.parents });
       (async () => {
         const res = await (
           await fetch(
@@ -53,8 +48,6 @@ export default function Form({
           value: member,
         }));
         setMemberOptions(memberOptions);
-
-        console.log({ memberOptions });
       })();
     }
   }, [form]);
@@ -66,8 +59,6 @@ export default function Form({
           credentials: "include",
         })
       ).json();
-
-      console.log({ formData });
       setForm(formData);
     })();
   }, [connectedUser]);
@@ -187,7 +178,7 @@ export default function Form({
                       )}
                     {form.properties[propertyId].isPartOfFormView &&
                       form.properties[propertyId].type === "date" && (
-                        <DateInput
+                        <input
                           type="date"
                           value={data?.[propertyId]}
                           onChange={(e) =>
@@ -197,12 +188,15 @@ export default function Form({
                       )}
                     {form.properties[propertyId].isPartOfFormView &&
                       form.properties[propertyId].type === "number" && (
-                        <DateInput
+                        <input
                           type="number"
                           value={data?.[propertyId]}
-                          onChange={(e) =>
-                            setData({ ...data, [propertyId]: e.target.value })
-                          }
+                          onChange={(e) => {
+                            setData({
+                              ...data,
+                              [propertyId]: parseFloat(e.target.value),
+                            });
+                          }}
                         />
                       )}
                     {form.properties[propertyId].isPartOfFormView &&
@@ -260,33 +254,23 @@ export default function Form({
                       )}
                     {form.properties[propertyId].isPartOfFormView &&
                       form.properties[propertyId].type === "reward" && (
-                        <Reward
-                          value={data?.[propertyId]}
-                          onChange={(value) => {
-                            setData({ ...data, [propertyId]: value });
-                          }}
+                        <RewardField
+                          circleId={form.parents[0].slug}
+                          reward={data?.[propertyId]}
+                          onChange={(value) =>
+                            setData({ ...data, [propertyId]: value })
+                          }
                         />
                       )}
                   </div>
                 ))}
                 <button
-                  className="
-              px-8
-              py-3
-              rounded-xl
-              text-md
-              text-purple
-              text-bold
-              bg-purple
-              bg-opacity-5
-              hover:bg-opacity-25
-              duration-700"
+                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
                   onClick={async () => {
                     console.log({ data });
                     const res = await AddData(form.id || "", data);
-                    console.log({ res });
-                    if (res) {
-                      toast.success("Data added successfully");
+                    if (res.id) {
+                      toast.success("Form submitted successfully");
                       // reset data
                       const tempData: any = {};
                       form.propertyOrder.forEach((propertyId) => {
@@ -315,6 +299,8 @@ export default function Form({
                         }
                       });
                       setData(tempData);
+                    } else {
+                      toast.error("Error adding data");
                     }
                   }}
                 >
@@ -332,14 +318,13 @@ export default function Form({
   }
 }
 
-const DateInput = styled.input`
-  border-radius: 0.55rem;
-  border 1px solid rgb(255, 255, 255, 0.1);
-  background-color: white;
-  width: 100%;
-  color: rgb(255, 255, 255, 0.7);
-  margin-top: 10px;
-`;
+// const DateInput = styled.input`
+//   border-radius: 0.55rem;
+//   border 1px solid rgb(255, 255, 255, 0.1);
+//   width: 100%;
+//   color: rgb(255, 255, 255, 0.7);
+//   margin-top: 10px;
+// `;
 
 const Container = styled.div`
   display: flex;
@@ -380,13 +365,23 @@ const Container = styled.div`
 
     input {
       width: 100%;
-      color: #1a1a1a;
+      border-radius: 0.55rem;
+      border: 1px solid rgb(255, 255, 255, 0.1);
+      width: 100%;
+      color: rgb(255, 255, 255, 0.9);
+      margin-top: 10px;
       padding: 0.5rem 0.5rem;
       border-radius: 0.5rem;
+      background-color: rgb(20, 20, 20);
+
+      &:focus {
+        outline: none;
+        border: 1px solid #bf5af2;
+      }
     }
 
     input[type="date"] {
-      padding: 0.3rem 0.5rem;
+      padding: 0.4rem 0.5rem;
     }
   }
 
