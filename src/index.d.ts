@@ -1,5 +1,6 @@
 export interface FormType {
   name: string;
+  circleId: string;
   slug: string;
   private: boolean;
   description: string;

@@ -33,9 +33,8 @@ export default function Form({
   const [data, setData] = useState<any>({});
   const [memberOptions, setMemberOptions] = useState([]);
   const { disconnect } = useDisconnect();
-
   const [submitted, setSubmitted] = useState(false);
-
+  console.log({ form });
   useEffect(() => {
     if (form?.parents) {
       (async () => {
@@ -101,6 +100,33 @@ export default function Form({
         </div>
         <div className="form flex-1">
           <h1>Form submitted succesfully!</h1>
+          <h5 className="mb-4">
+            The creator of this form is distributing kudos to everyone that
+            submitted a response
+          </h5>
+          {connectedUser && (
+            <button
+              className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+              onClick={async () => {
+                const res = await (
+                  await fetch(
+                    `${API_HOST}/collection/v1/${form?.id}/airdropKudos`,
+                    {
+                      method: "PATCH",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      credentials: "include",
+                    }
+                  )
+                ).json();
+                console.log(res);
+              }}
+            >
+              Claim Kudos{" "}
+            </button>
+          )}
+          {!connectedUser && <Connect />}
         </div>
         <div className="footer bg-purple bg-opacity-5">
           <Navbar />
@@ -133,11 +159,13 @@ export default function Form({
                 </h5>
               </div>
             )}
-          {!connectedUser && (
-            <div className="mb-4">
-              <Connect />
-            </div>
-          )}
+          {!connectedUser &&
+            !form.canFillForm &&
+            form.formRoleGating?.length > 0 && (
+              <div className="mb-4">
+                <Connect />
+              </div>
+            )}
           {connectedUser && (
             <div className="mb-4">
               <button
