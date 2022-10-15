@@ -99,7 +99,7 @@ export default function Form({
           </div>
         </div>
         <div className="form flex-1">
-          <h1>Form submitted succesfully!</h1>
+          <h1>{`${form?.messageOnSubmission}`}</h1>
           <h5 className="mb-4">
             The creator of this form is distributing kudos to everyone that
             submitted a response

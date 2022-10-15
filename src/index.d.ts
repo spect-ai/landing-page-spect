@@ -26,6 +26,8 @@ export interface FormType {
   defaultView: string;
   formRoleGating: number[];
   canFillForm: boolean;
+  mintkudosTokenId: number;
+  messageOnSubmission: string;
   createdAt: string;
   updatedAt: string;
   id: string;
