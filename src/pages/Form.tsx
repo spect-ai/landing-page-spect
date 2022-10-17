@@ -16,6 +16,7 @@ import useWindowSize from "react-use/lib/useWindowSize";
 import Confetti from "react-confetti";
 import { TwitterShareButton } from "react-share";
 import { TwitterCircleFilled, TwitterOutlined } from "@ant-design/icons";
+import { recordClaimInfo } from "../service/kudos";
 
 const API_HOST = "http://localhost:8080";
 const MINTKUDOS_API_HOST = "https://api.mintkudos.xyz";
@@ -41,9 +42,12 @@ export default function Form({
   const [submitted, setSubmitted] = useState(false);
   const [kudos, setKudos] = useState({} as KudosType);
   const [claiming, setClaiming] = useState(false);
-  const [claimed, setClaimed] = useState(true);
-  const { width, height } = useWindowSize();
+  const [claimed, setClaimed] = useState(false);
+  const [claimedJustNow, setClaimedJustNow] = useState(false);
 
+  const { width, height } = useWindowSize();
+  console.log({ connectedUser });
+  console.log({ form });
   useEffect(() => {
     if (form?.parents) {
       (async () => {
@@ -108,90 +112,118 @@ export default function Form({
 
   if (claimed) {
     return (
-      <Container>
-        <div className="header bg-purple bg-opacity-5">
-          <div>
-            <VioletBlur className="absolute top-0 left-0" />
-            <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
-            <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
-            <h1>{form?.name}</h1>
-            <p>{form?.description}</p>
+      <>
+        {claimedJustNow && (
+          <Confetti
+            width={width}
+            height={height}
+            recycle={false}
+            gravity={0.07}
+            numberOfPieces={600}
+          />
+        )}
+        <Container>
+          <div className="header bg-purple bg-opacity-5">
+            <div>
+              <VioletBlur className="absolute top-0 left-0" />
+              <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
+              <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
+              <h1>{form?.name}</h1>
+              <p>{form?.description}</p>
+              {connectedUser && (
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                  onClick={async () => {
+                    await fetch(`${API_HOST}/auth/disconnect`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    disconnect();
+
+                    localStorage.removeItem("connectorIndex");
+                    setAuthenticationStatus("unauthenticated");
+                    setConnectedUser("");
+                  }}
+                >
+                  Logout
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="form flex-1">
-          <h1>{`${
-            form?.messageOnSubmission || "Your response has been submitted!"
-          }`}</h1>
-          <div className="flex flex-row justify-start align-center">
-            {kudos?.imageUrl && (
-              <>
-                <img
-                  src={`${kudos.imageUrl}`}
-                  alt="kudos"
-                  className="max-w-sm h-auto ease-in-out duration-300 mb-8"
-                />
-              </>
-            )}
-            <div className="flex flex-col ml-8 justify-start">
-              <h3>You have successfully claimed this Kudos!</h3>
-              <div className="flex flex-col justify-start align-center mt-8">
-                <div className="flex flex-row justify-start align-middle">
-                  <TwitterShareButton
-                    url={`https://spect.network/`}
-                    title={
-                      "I just filled out a web3 native form and claimed my Kudos on @JoinSpect via @mintkudosXYZ 🎉"
-                    }
-                  >
-                    <button className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700">
-                      <TwitterOutlined
-                        style={{
-                          fontSize: "2rem",
-                          marginLeft: "0.2rem",
-                          marginRight: "0.2rem",
-                          color: "rgb(29, 155, 240, 1)",
-                        }}
-                      />
-                      <span className="ml-4">Share on Twitter</span>
+          <div className="form flex-1">
+            <h1>{`${
+              form?.messageOnSubmission || "Your response has been submitted!"
+            }`}</h1>
+            <div className="flex flex-row justify-start align-center">
+              {kudos?.imageUrl && (
+                <>
+                  <img
+                    src={`${kudos.imageUrl}`}
+                    alt="kudos"
+                    className="max-w-sm h-auto ease-in-out duration-300 mb-8"
+                  />
+                </>
+              )}
+              <div className="flex flex-col ml-8 justify-start">
+                <h1>You have successfully claimed this Kudos 🎉</h1>
+                <div className="flex flex-col justify-start align-center mt-8">
+                  <div className="flex flex-row justify-start align-middle">
+                    <TwitterShareButton
+                      url={`https://spect.network/`}
+                      title={
+                        "I just filled out a web3 native form and claimed my Kudos on @JoinSpect via @mintkudosXYZ 🎉"
+                      }
+                    >
+                      <button className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700">
+                        <TwitterOutlined
+                          style={{
+                            fontSize: "1.8rem",
+                            marginRight: "0.2rem",
+                            color: "rgb(29, 155, 240, 1)",
+                          }}
+                        />
+                        <span className="ml-4">Share on Twitter</span>
+                      </button>
+                    </TwitterShareButton>
+                  </div>
+                  <div className="flex flex-row justify-start align-middle">
+                    <button
+                      className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700  inline-flex items-center"
+                      onClick={() => {
+                        window.open(
+                          `https://opensea.io/assets/matic/0x60576A64851C5B42e8c57E3E4A5cF3CF4eEb2ED6/${kudos.tokenId}`,
+                          "_blank"
+                        );
+                      }}
+                    >
+                      <img src="/openseaLogo.svg" className="h-8" />
+                      <span className="ml-4">View on Opensea</span>
                     </button>
-                  </TwitterShareButton>
-                </div>
-                <div className="flex flex-row justify-start align-middle">
-                  <button
-                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700  inline-flex items-center"
-                    onClick={() => {
-                      window.open(
-                        `https://opensea.io/assets/matic/0x60576A64851C5B42e8c57E3E4A5cF3CF4eEb2ED6/${kudos.tokenId}`,
-                        "_blank"
-                      );
-                    }}
-                  >
-                    <img src="/openseaLogo.svg" className="h-8" />
-                    <span className="ml-4">View on Opensea</span>
-                  </button>
-                </div>
-                <div className="flex flex-row justify-start align-center">
-                  <button
-                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700 inline-flex items-center"
-                    onClick={() => {
-                      window.open(
-                        `https://rarible.com/token/polygon/0x60576a64851c5b42e8c57e3e4a5cf3cf4eeb2ed6:${kudos.tokenId}?tab=overview`,
-                        "_blank"
-                      );
-                    }}
-                  >
-                    {" "}
-                    <img src="/raribleLogo.svg" className="h-8" />
-                    <span className="ml-4">View on Rarible</span>
-                  </button>
+                  </div>
+                  <div className="flex flex-row justify-start align-center">
+                    <button
+                      className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700 inline-flex items-center"
+                      onClick={() => {
+                        window.open(
+                          `https://rarible.com/token/polygon/0x60576a64851c5b42e8c57e3e4a5cf3cf4eeb2ed6:${kudos.tokenId}?tab=overview`,
+                          "_blank"
+                        );
+                      }}
+                    >
+                      {" "}
+                      <img src="/raribleLogo.svg" className="h-8" />
+                      <span className="ml-4">View on Rarible</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="footer bg-purple bg-opacity-5">
-          <Navbar />
-        </div>
-      </Container>
+          <div className="footer bg-purple bg-opacity-5">
+            <Navbar />
+          </div>
+        </Container>
+      </>
     );
   }
 
@@ -205,6 +237,29 @@ export default function Form({
             <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
             <h1>{form?.name}</h1>
             <p>{form?.description}</p>
+            {!connectedUser && !form?.canFillForm && (
+              <div className="">
+                <Connect />
+              </div>
+            )}
+            {connectedUser && (
+              <button
+                className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700 "
+                onClick={async () => {
+                  await fetch(`${API_HOST}/auth/disconnect`, {
+                    method: "POST",
+                    credentials: "include",
+                  });
+                  disconnect();
+
+                  localStorage.removeItem("connectorIndex");
+                  setAuthenticationStatus("unauthenticated");
+                  setConnectedUser("");
+                }}
+              >
+                Logout
+              </button>
+            )}
           </div>
         </div>
         <div className="form flex-1">
@@ -213,40 +268,72 @@ export default function Form({
           }`}</h1>
           {form?.mintkudosTokenId && (
             <>
-              <h5 className="mb-4">
-                The creator of this form is distributing kudos to everyone that
-                submitted a response
-              </h5>
-              <img
-                src={`${kudos.imageUrl}`}
-                alt="kudos"
-                className="max-w-sm h-auto ease-in-out duration-300 mb-8 mt-8"
-              />
-              {connectedUser && (
-                <button
-                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-                  onClick={async () => {
-                    const res = await (
-                      await fetch(
-                        `${API_HOST}/collection/v1/${form?.id}/airdropKudos`,
-                        {
-                          method: "PATCH",
-                          headers: {
-                            "Content-Type": "application/json",
-                          },
-                          credentials: "include",
+              <div className="flex flex-row justify-start align-center">
+                <img
+                  src={`${kudos.imageUrl}`}
+                  alt="kudos"
+                  className="max-w-sm h-auto ease-in-out duration-300 mb-8  mr-8"
+                />
+                <div className="flex flex-col justify-start align-center">
+                  <h5 className="mb-4">
+                    The creator of this form is distributing kudos to everyone
+                    that submitted a response
+                  </h5>
+                  {connectedUser && (
+                    <button
+                      className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700 inline-flex items-center w-52 justify-center"
+                      onClick={async () => {
+                        setClaiming(true);
+                        try {
+                          const res = await fetch(
+                            `${API_HOST}/collection/v1/${form?.id}/airdropKudos`,
+                            {
+                              method: "PATCH",
+                              headers: {
+                                "Content-Type": "application/json",
+                              },
+                              credentials: "include",
+                            }
+                          );
+
+                          console.log(res);
+                          if (res.ok) {
+                            setClaimed(true);
+                            setClaimedJustNow(true);
+                          }
+                        } catch (e) {
+                          console.log(e);
+                          toast.error(
+                            "Something went wrong, please try again later"
+                          );
                         }
-                      )
-                    ).json();
-                    setClaiming(true);
-                    console.log(res);
-                  }}
-                  disabled={claiming || claimed}
-                >
-                  Claim Kudos{" "}
-                </button>
-              )}
-              {!connectedUser && <Connect />}{" "}
+
+                        setClaiming(false);
+                      }}
+                    >
+                      {claiming && (
+                        <svg
+                          aria-hidden="true"
+                          className="mr-2 w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-pink-500"
+                          viewBox="0 0 100 101"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                            fill="currentFill"
+                          />
+                        </svg>
+                      )}
+                      Claim Kudos{" "}
+                    </button>
+                  )}
+                </div>
+              </div>
             </>
           )}
         </div>
@@ -260,14 +347,6 @@ export default function Form({
   if (form && !submitted) {
     return (
       <Container>
-        <Confetti
-          width={width}
-          height={height}
-          recycle={false}
-          gravity={0.07}
-          numberOfPieces={600}
-        />
-
         <ToastContainer />
         <div className="header bg-purple bg-opacity-5">
           <div>
@@ -276,44 +355,56 @@ export default function Form({
             <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
             <h1>{form?.name}</h1>
             <p>{form?.description}</p>
+            <div className="mt-8 mb-4">
+              {!connectedUser &&
+                !form.canFillForm &&
+                form.formRoleGating?.length > 0 && (
+                  <div className="mb-2">
+                    <h5>
+                      This form is role gated. Please connect your wallet to
+                      access form.
+                    </h5>
+                  </div>
+                )}
+
+              {!connectedUser &&
+                !form.canFillForm &&
+                form.mintkudosTokenId &&
+                !form.formRoleGating?.length && (
+                  <div className="mb-2">
+                    <h5>
+                      This form distributes kudos to everyone that submits a
+                      response. Please connect your wallet to access form.
+                    </h5>
+                  </div>
+                )}
+              {!connectedUser && !form.canFillForm && (
+                <div className="">
+                  <Connect />
+                </div>
+              )}
+              {connectedUser && (
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                  onClick={async () => {
+                    await fetch(`${API_HOST}/auth/disconnect`, {
+                      method: "POST",
+                      credentials: "include",
+                    });
+                    disconnect();
+
+                    localStorage.removeItem("connectorIndex");
+                    setAuthenticationStatus("unauthenticated");
+                    setConnectedUser("");
+                  }}
+                >
+                  Logout
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="form flex-1">
-          {!connectedUser &&
-            !form.canFillForm &&
-            form.formRoleGating?.length > 0 && (
-              <div className="mb-4">
-                <h5>
-                  This form is role gated. Please connect your wallet to access
-                  form.
-                </h5>
-              </div>
-            )}
-          {!connectedUser &&
-            !form.canFillForm &&
-            form.formRoleGating?.length > 0 && (
-              <div className="mb-4">
-                <Connect />
-              </div>
-            )}
-          {connectedUser && (
-            <button
-              className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-              onClick={async () => {
-                await fetch(`${API_HOST}/auth/disconnect`, {
-                  method: "POST",
-                  credentials: "include",
-                });
-                disconnect();
-
-                localStorage.removeItem("connectorIndex");
-                setAuthenticationStatus("unauthenticated");
-                setConnectedUser("");
-              }}
-            >
-              Logout
-            </button>
-          )}
           {connectedUser && !form.canFillForm && (
             <div className="mt-4">
               <h5>Looks like you dont have access to this form.</h5>
@@ -432,49 +523,51 @@ export default function Form({
                     )}
                 </div>
               ))}
-              <button
-                className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-                onClick={async () => {
-                  console.log({ data });
-                  const res = await AddData(form.id || "", data);
-                  if (res.id) {
-                    toast.success("Form submitted successfully");
-                    // reset data
-                    const tempData: any = {};
-                    form.propertyOrder.forEach((propertyId) => {
-                      if (
-                        [
-                          "longText",
-                          "shortText",
-                          "ethAddress",
-                          "user",
-                          "date",
-                        ].includes(form.properties[propertyId].type)
-                      ) {
-                        tempData[propertyId] = "";
-                      } else if (
-                        form.properties[propertyId].type === "singleSelect"
-                      ) {
-                        tempData[propertyId] = (
-                          form.properties[propertyId] as any
-                        ).options[0];
-                      } else if (
-                        ["multiSelect", "user[]"].includes(
-                          form.properties[propertyId].type
-                        )
-                      ) {
-                        tempData[propertyId] = [];
-                      }
-                    });
-                    setData(tempData);
-                    setSubmitted(true);
-                  } else {
-                    toast.error("Error adding data");
-                  }
-                }}
-              >
-                Submit
-              </button>
+              <div className="flex justify-end">
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                  onClick={async () => {
+                    console.log({ data });
+                    const res = await AddData(form.id || "", data);
+                    if (res.id) {
+                      toast.success("Form submitted successfully");
+                      // reset data
+                      const tempData: any = {};
+                      form.propertyOrder.forEach((propertyId) => {
+                        if (
+                          [
+                            "longText",
+                            "shortText",
+                            "ethAddress",
+                            "user",
+                            "date",
+                          ].includes(form.properties[propertyId].type)
+                        ) {
+                          tempData[propertyId] = "";
+                        } else if (
+                          form.properties[propertyId].type === "singleSelect"
+                        ) {
+                          tempData[propertyId] = (
+                            form.properties[propertyId] as any
+                          ).options[0];
+                        } else if (
+                          ["multiSelect", "user[]"].includes(
+                            form.properties[propertyId].type
+                          )
+                        ) {
+                          tempData[propertyId] = [];
+                        }
+                      });
+                      setData(tempData);
+                      setSubmitted(true);
+                    } else {
+                      toast.error("Error adding data");
+                    }
+                  }}
+                >
+                  Submit
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -101,13 +101,16 @@ function App() {
   useEffect(() => {
     void (async () => {
       try {
-        const user = await (await fetch(`${API_HOST}/user/me`)).json();
-        console.log(user);
+        const user = await (
+          await fetch(`${API_HOST}/user/me`, {
+            credentials: "include",
+          })
+        ).json();
         setAuthenticationStatus(
           user.ethAddress ? "authenticated" : "unauthenticated"
         );
         if (user.ethAddress) {
-          console.log("connectUser");
+          setConnectedUser(user.id);
         }
       } catch (e) {
         console.log(e);

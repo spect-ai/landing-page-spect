@@ -10,6 +10,7 @@ export const AddData = async (collectionId: string, data: any) => {
       body: JSON.stringify({
         data,
       }),
+      credentials: "include",
     })
   ).json();
 };
