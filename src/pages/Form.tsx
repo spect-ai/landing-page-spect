@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
-import { FormType } from "..";
+import { FormType, KudosType } from "..";
 import LongText from "../components/LongText/LongText";
 import { PinkBlur, VioletBlur } from "../modules/1-Hero-Section";
 import Navbar from "../modules/1-Hero-Section/Navbar";
@@ -12,8 +12,13 @@ import { AddData } from "../service/collection";
 import { Connect } from "../components/ConnectWallet";
 import { useAccount, useDisconnect } from "wagmi";
 import RewardField from "../components/Reward/Reward";
+import useWindowSize from "react-use/lib/useWindowSize";
+import Confetti from "react-confetti";
+import { TwitterShareButton } from "react-share";
+import { TwitterCircleFilled, TwitterOutlined } from "@ant-design/icons";
 
 const API_HOST = "http://localhost:8080";
+const MINTKUDOS_API_HOST = "https://api.mintkudos.xyz";
 
 type Props = {
   connectedUser: string;
@@ -34,7 +39,11 @@ export default function Form({
   const [memberOptions, setMemberOptions] = useState([]);
   const { disconnect } = useDisconnect();
   const [submitted, setSubmitted] = useState(false);
-  console.log({ form });
+  const [kudos, setKudos] = useState({} as KudosType);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(true);
+  const { width, height } = useWindowSize();
+
   useEffect(() => {
     if (form?.parents) {
       (async () => {
@@ -60,6 +69,17 @@ export default function Form({
         })
       ).json();
       setForm(formData);
+
+      if (formData.mintkudosTokenId) {
+        const kudo = await (
+          await fetch(
+            `${MINTKUDOS_API_HOST}/v1/tokens/${formData.mintkudosTokenId}`
+          )
+        ).json();
+        console.log("owowo");
+        console.log({ kudo });
+        setKudos(kudo);
+      }
     })();
   }, [connectedUser]);
 
@@ -86,6 +106,95 @@ export default function Form({
     }
   }, [form]);
 
+  if (claimed) {
+    return (
+      <Container>
+        <div className="header bg-purple bg-opacity-5">
+          <div>
+            <VioletBlur className="absolute top-0 left-0" />
+            <PinkBlur className="absolute right-0 bottom-48 h-1/6 w-1/6 opacity-50" />
+            <PinkBlur className="absolute bottom-36 left-72 h-24 w-24" />
+            <h1>{form?.name}</h1>
+            <p>{form?.description}</p>
+          </div>
+        </div>
+        <div className="form flex-1">
+          <h1>{`${
+            form?.messageOnSubmission || "Your response has been submitted!"
+          }`}</h1>
+          <div className="flex flex-row justify-start align-center">
+            {kudos?.imageUrl && (
+              <>
+                <img
+                  src={`${kudos.imageUrl}`}
+                  alt="kudos"
+                  className="max-w-sm h-auto ease-in-out duration-300 mb-8"
+                />
+              </>
+            )}
+            <div className="flex flex-col ml-8 justify-start">
+              <h3>You have successfully claimed this Kudos!</h3>
+              <div className="flex flex-col justify-start align-center mt-8">
+                <div className="flex flex-row justify-start align-middle">
+                  <TwitterShareButton
+                    url={`https://spect.network/`}
+                    title={
+                      "I just filled out a web3 native form and claimed my Kudos on @JoinSpect via @mintkudosXYZ 🎉"
+                    }
+                  >
+                    <button className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700">
+                      <TwitterOutlined
+                        style={{
+                          fontSize: "2rem",
+                          marginLeft: "0.2rem",
+                          marginRight: "0.2rem",
+                          color: "rgb(29, 155, 240, 1)",
+                        }}
+                      />
+                      <span className="ml-4">Share on Twitter</span>
+                    </button>
+                  </TwitterShareButton>
+                </div>
+                <div className="flex flex-row justify-start align-middle">
+                  <button
+                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700  inline-flex items-center"
+                    onClick={() => {
+                      window.open(
+                        `https://opensea.io/assets/matic/0x60576A64851C5B42e8c57E3E4A5cF3CF4eEb2ED6/${kudos.tokenId}`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <img src="/openseaLogo.svg" className="h-8" />
+                    <span className="ml-4">View on Opensea</span>
+                  </button>
+                </div>
+                <div className="flex flex-row justify-start align-center">
+                  <button
+                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700 inline-flex items-center"
+                    onClick={() => {
+                      window.open(
+                        `https://rarible.com/token/polygon/0x60576a64851c5b42e8c57e3e4a5cf3cf4eeb2ed6:${kudos.tokenId}?tab=overview`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    {" "}
+                    <img src="/raribleLogo.svg" className="h-8" />
+                    <span className="ml-4">View on Rarible</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="footer bg-purple bg-opacity-5">
+          <Navbar />
+        </div>
+      </Container>
+    );
+  }
+
   if (submitted) {
     return (
       <Container>
@@ -99,34 +208,47 @@ export default function Form({
           </div>
         </div>
         <div className="form flex-1">
-          <h1>{`${form?.messageOnSubmission}`}</h1>
-          <h5 className="mb-4">
-            The creator of this form is distributing kudos to everyone that
-            submitted a response
-          </h5>
-          {connectedUser && (
-            <button
-              className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-              onClick={async () => {
-                const res = await (
-                  await fetch(
-                    `${API_HOST}/collection/v1/${form?.id}/airdropKudos`,
-                    {
-                      method: "PATCH",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      credentials: "include",
-                    }
-                  )
-                ).json();
-                console.log(res);
-              }}
-            >
-              Claim Kudos{" "}
-            </button>
+          <h1>{`${
+            form?.messageOnSubmission || "Your response has been submitted!"
+          }`}</h1>
+          {form?.mintkudosTokenId && (
+            <>
+              <h5 className="mb-4">
+                The creator of this form is distributing kudos to everyone that
+                submitted a response
+              </h5>
+              <img
+                src={`${kudos.imageUrl}`}
+                alt="kudos"
+                className="max-w-sm h-auto ease-in-out duration-300 mb-8 mt-8"
+              />
+              {connectedUser && (
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+                  onClick={async () => {
+                    const res = await (
+                      await fetch(
+                        `${API_HOST}/collection/v1/${form?.id}/airdropKudos`,
+                        {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          credentials: "include",
+                        }
+                      )
+                    ).json();
+                    setClaiming(true);
+                    console.log(res);
+                  }}
+                  disabled={claiming || claimed}
+                >
+                  Claim Kudos{" "}
+                </button>
+              )}
+              {!connectedUser && <Connect />}{" "}
+            </>
           )}
-          {!connectedUser && <Connect />}
         </div>
         <div className="footer bg-purple bg-opacity-5">
           <Navbar />
@@ -138,6 +260,14 @@ export default function Form({
   if (form && !submitted) {
     return (
       <Container>
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          gravity={0.07}
+          numberOfPieces={600}
+        />
+
         <ToastContainer />
         <div className="header bg-purple bg-opacity-5">
           <div>
@@ -167,24 +297,22 @@ export default function Form({
               </div>
             )}
           {connectedUser && (
-            <div className="mb-4">
-              <button
-                className="px-8 py-3rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
-                onClick={async () => {
-                  await fetch(`${API_HOST}/auth/disconnect`, {
-                    method: "POST",
-                    credentials: "include",
-                  });
-                  disconnect();
+            <button
+              className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
+              onClick={async () => {
+                await fetch(`${API_HOST}/auth/disconnect`, {
+                  method: "POST",
+                  credentials: "include",
+                });
+                disconnect();
 
-                  localStorage.removeItem("connectorIndex");
-                  setAuthenticationStatus("unauthenticated");
-                  setConnectedUser("");
-                }}
-              >
-                Logout
-              </button>
-            </div>
+                localStorage.removeItem("connectorIndex");
+                setAuthenticationStatus("unauthenticated");
+                setConnectedUser("");
+              }}
+            >
+              Logout
+            </button>
           )}
           {connectedUser && !form.canFillForm && (
             <div className="mt-4">
