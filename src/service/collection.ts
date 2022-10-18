@@ -14,3 +14,25 @@ export const AddData = async (collectionId: string, data: any) => {
     })
   ).json();
 };
+
+export const UpdateData = async (
+  collectionId: string,
+  dataId: string,
+  data: any
+) => {
+  return await (
+    await fetch(
+      `${API_HOST}/collection/v1/${collectionId}/updateData?dataId=${dataId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data,
+        }),
+        credentials: "include",
+      }
+    )
+  ).json();
+};

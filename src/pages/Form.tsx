@@ -8,7 +8,7 @@ import Navbar from "../modules/1-Hero-Section/Navbar";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Dropdown from "../components/Select/Select";
-import { AddData } from "../service/collection";
+import { AddData, UpdateData } from "../service/collection";
 import { Connect } from "../components/ConnectWallet";
 import { useAccount, useDisconnect } from "wagmi";
 import RewardField from "../components/Reward/Reward";
@@ -44,10 +44,16 @@ export default function Form({
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
   const [claimedJustNow, setClaimedJustNow] = useState(false);
+  const [submitAnotherResponse, setSubmitAnotherResponse] = useState(false);
+  const [updateResponse, setUpdateResponse] = useState(false);
+  const [responseBeingUpdated, setResponseBeingUpdated] = useState(false);
+  const [responseSlug, setResponseSlug] = useState("");
 
   const { width, height } = useWindowSize();
-  console.log({ connectedUser });
   console.log({ form });
+  console.log({ data });
+  console.log({ updateResponse });
+
   useEffect(() => {
     if (form?.parents) {
       (async () => {
@@ -68,11 +74,12 @@ export default function Form({
   useEffect(() => {
     (async () => {
       const formData = await (
-        await fetch(`${API_HOST}/collection/v1/slug/${formId}`, {
+        await fetch(`${API_HOST}/collection/v1/public/slug/${formId}`, {
           credentials: "include",
         })
       ).json();
       setForm(formData);
+      setClaimed(formData.kudosClaimedByUser);
 
       if (formData.mintkudosTokenId) {
         const kudo = await (
@@ -80,8 +87,7 @@ export default function Form({
             `${MINTKUDOS_API_HOST}/v1/tokens/${formData.mintkudosTokenId}`
           )
         ).json();
-        console.log("owowo");
-        console.log({ kudo });
+
         setKudos(kudo);
       }
     })();
@@ -89,28 +95,38 @@ export default function Form({
 
   useEffect(() => {
     if (form) {
-      const tempData: any = {};
-      form.propertyOrder.forEach((propertyId) => {
-        if (
-          ["longText", "shortText", "ethAddress", "user", "date"].includes(
-            form.properties[propertyId].type
-          )
-        ) {
-          tempData[propertyId] = "";
-        } else if (form.properties[propertyId].type === "singleSelect") {
-          // @ts-ignore
-          tempData[propertyId] = form.properties[propertyId].options[0];
-        } else if (
-          ["multiSelect", "user[]"].includes(form.properties[propertyId].type)
-        ) {
-          tempData[propertyId] = [];
-        }
-      });
-      setData(tempData);
+      console.log(updateResponse);
+      console.log(form?.previousResponses?.length);
+      if (updateResponse && form?.previousResponses?.length > 0) {
+        console.log({
+          wut: form.previousResponses[form.previousResponses.length - 1],
+        });
+        setData(form.previousResponses[form.previousResponses.length - 1]);
+      } else {
+        console.log("setting data to empty object");
+        const tempData: any = {};
+        form.propertyOrder.forEach((propertyId) => {
+          if (
+            ["longText", "shortText", "ethAddress", "user", "date"].includes(
+              form.properties[propertyId].type
+            )
+          ) {
+            tempData[propertyId] = "";
+          } else if (form.properties[propertyId].type === "singleSelect") {
+            // @ts-ignore
+            tempData[propertyId] = form.properties[propertyId].options[0];
+          } else if (
+            ["multiSelect", "user[]"].includes(form.properties[propertyId].type)
+          ) {
+            tempData[propertyId] = [];
+          }
+        });
+        setData(tempData);
+      }
     }
-  }, [form]);
+  }, [form, updateResponse]);
 
-  if (claimed) {
+  if (claimed && !submitAnotherResponse && !updateResponse) {
     return (
       <>
         {claimedJustNow && (
@@ -166,7 +182,7 @@ export default function Form({
               )}
               <div className="flex flex-col ml-8 justify-start">
                 <h1>You have successfully claimed this Kudos 🎉</h1>
-                <div className="flex flex-col justify-start align-center mt-8">
+                <div className="flex flex-col justify-start align-center">
                   <div className="flex flex-row justify-start align-middle">
                     <TwitterShareButton
                       url={`https://spect.network/`}
@@ -218,7 +234,43 @@ export default function Form({
                 </div>
               </div>
             </div>
+            {form?.updatingResponseAllowed && (
+              <div className="flex flex-row justify-end align-end">
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                  onClick={async () => {
+                    setUpdateResponse(true);
+                    setSubmitted(false);
+                  }}
+                >
+                  Update response
+                </button>
+              </div>
+            )}
+            {form?.multipleResponsesAllowed && (
+              <div className="flex flex-row justify-end align-end">
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                  onClick={async () => {
+                    setSubmitAnotherResponse(true);
+                  }}
+                >
+                  Submit another response
+                </button>
+              </div>
+            )}
+            <a href="https://circles.spect.network/">
+              <div className="flex flex-row justify-end align-end">
+                <button
+                  className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                  onClick={async () => {}}
+                >
+                  Create your own form
+                </button>
+              </div>
+            </a>
           </div>
+
           <div className="footer bg-purple bg-opacity-5">
             <Navbar />
           </div>
@@ -227,7 +279,7 @@ export default function Form({
     );
   }
 
-  if (submitted) {
+  if (submitted && !submitAnotherResponse) {
     return (
       <Container>
         <div className="header bg-purple bg-opacity-5">
@@ -334,6 +386,41 @@ export default function Form({
                   )}
                 </div>
               </div>
+              {form.updatingResponseAllowed && (
+                <div className="flex flex-row justify-end align-end">
+                  <button
+                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                    onClick={async () => {
+                      setUpdateResponse(true);
+                      setSubmitted(false);
+                    }}
+                  >
+                    Update response
+                  </button>
+                </div>
+              )}
+              {form.multipleResponsesAllowed && (
+                <div className="flex flex-row justify-end align-end">
+                  <button
+                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                    onClick={async () => {
+                      setSubmitAnotherResponse(true);
+                    }}
+                  >
+                    Submit another response
+                  </button>
+                </div>
+              )}
+              <a href="https://circles.spect.network/">
+                <div className="flex flex-row justify-end align-end">
+                  <button
+                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                    onClick={async () => {}}
+                  >
+                    Create your own form
+                  </button>
+                </div>
+              </a>
             </>
           )}
         </div>
@@ -344,7 +431,7 @@ export default function Form({
     );
   }
 
-  if (form && !submitted) {
+  if (form && (!submitted || submitAnotherResponse)) {
     return (
       <Container>
         <ToastContainer />
@@ -528,7 +615,15 @@ export default function Form({
                   className="px-8 py-3 rounded-xl text-md text-purple text-bold bg-purple bg-opacity-5 hover:bg-opacity-25 duration-700"
                   onClick={async () => {
                     console.log({ data });
-                    const res = await AddData(form.id || "", data);
+                    let res;
+                    if (updateResponse) {
+                      console.log("add");
+                      res = await AddData(form.id || "", data);
+                    } else {
+                      console.log("update");
+
+                      res = await UpdateData(form.id || "", data.slug, data);
+                    }
                     if (res.id) {
                       toast.success("Form submitted successfully");
                       // reset data
@@ -560,6 +655,8 @@ export default function Form({
                       });
                       setData(tempData);
                       setSubmitted(true);
+                      setSubmitAnotherResponse(false);
+                      setUpdateResponse(false);
                     } else {
                       toast.error("Error adding data");
                     }

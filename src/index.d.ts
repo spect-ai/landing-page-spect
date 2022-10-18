@@ -28,6 +28,10 @@ export interface FormType {
   canFillForm: boolean;
   mintkudosTokenId: number;
   messageOnSubmission: string;
+  kudosClaimedByUser: boolean;
+  multipleResponsesAllowed: boolean;
+  updatingResponseAllowed: boolean;
+  previousResponses: MappedItem<object>;
   createdAt: string;
   updatedAt: string;
   id: string;
