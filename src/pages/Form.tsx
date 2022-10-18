@@ -46,13 +46,9 @@ export default function Form({
   const [claimedJustNow, setClaimedJustNow] = useState(false);
   const [submitAnotherResponse, setSubmitAnotherResponse] = useState(false);
   const [updateResponse, setUpdateResponse] = useState(false);
-  const [responseBeingUpdated, setResponseBeingUpdated] = useState(false);
-  const [responseSlug, setResponseSlug] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const { width, height } = useWindowSize();
-  console.log({ form });
-  console.log({ data });
-  console.log({ updateResponse });
 
   useEffect(() => {
     if (form?.parents) {
@@ -73,6 +69,7 @@ export default function Form({
 
   useEffect(() => {
     (async () => {
+      setLoading(true);
       const formData = await (
         await fetch(`${API_HOST}/collection/v1/public/slug/${formId}`, {
           credentials: "include",
@@ -80,6 +77,7 @@ export default function Form({
       ).json();
       setForm(formData);
       setClaimed(formData.kudosClaimedByUser);
+      setSubmitted(formData.previousResponses?.length > 0);
 
       if (formData.mintkudosTokenId) {
         const kudo = await (
@@ -90,18 +88,42 @@ export default function Form({
 
         setKudos(kudo);
       }
+      setLoading(false);
     })();
-  }, [connectedUser]);
+  }, [connectedUser, updateResponse]);
 
   useEffect(() => {
     if (form) {
+      setLoading(true);
       console.log(updateResponse);
       console.log(form?.previousResponses?.length);
+      const tempData: any = {};
+
       if (updateResponse && form?.previousResponses?.length > 0) {
         console.log({
           wut: form.previousResponses[form.previousResponses.length - 1],
         });
-        setData(form.previousResponses[form.previousResponses.length - 1]);
+        const lastResponse =
+          form.previousResponses[form.previousResponses.length - 1];
+        form.propertyOrder.forEach((propertyId) => {
+          console.log({ propertyId, resp: lastResponse[propertyId] });
+          if (
+            ["longText", "shortText", "ethAddress", "user", "date"].includes(
+              form.properties[propertyId].type
+            )
+          ) {
+            tempData[propertyId] = lastResponse[propertyId] || "";
+          } else if (form.properties[propertyId].type === "singleSelect") {
+            tempData[propertyId] =
+              lastResponse[propertyId] ||
+              // @ts-ignore
+              form.properties[propertyId].options[0];
+          } else if (
+            ["multiSelect", "user[]"].includes(form.properties[propertyId].type)
+          ) {
+            tempData[propertyId] = lastResponse[propertyId] || [];
+          }
+        });
       } else {
         console.log("setting data to empty object");
         const tempData: any = {};
@@ -121,10 +143,15 @@ export default function Form({
             tempData[propertyId] = [];
           }
         });
-        setData(tempData);
       }
+      setData(tempData);
+      setLoading(false);
     }
-  }, [form, updateResponse]);
+  }, [form]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (claimed && !submitAnotherResponse && !updateResponse) {
     return (
@@ -181,7 +208,7 @@ export default function Form({
                 </>
               )}
               <div className="flex flex-col ml-8 justify-start">
-                <h1>You have successfully claimed this Kudos 🎉</h1>
+                <h1>You have claimed this Kudos 🎉</h1>
                 <div className="flex flex-col justify-start align-center">
                   <div className="flex flex-row justify-start align-middle">
                     <TwitterShareButton
@@ -238,7 +265,7 @@ export default function Form({
               <div className="flex flex-row justify-end align-end">
                 <button
                   className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                  onClick={async () => {
+                  onClick={() => {
                     setUpdateResponse(true);
                     setSubmitted(false);
                   }}
@@ -251,7 +278,7 @@ export default function Form({
               <div className="flex flex-row justify-end align-end">
                 <button
                   className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                  onClick={async () => {
+                  onClick={() => {
                     setSubmitAnotherResponse(true);
                   }}
                 >
@@ -263,7 +290,7 @@ export default function Form({
               <div className="flex flex-row justify-end align-end">
                 <button
                   className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                  onClick={async () => {}}
+                  onClick={() => {}}
                 >
                   Create your own form
                 </button>
@@ -279,7 +306,7 @@ export default function Form({
     );
   }
 
-  if (submitted && !submitAnotherResponse) {
+  if (submitted && !submitAnotherResponse && !updateResponse) {
     return (
       <Container>
         <div className="header bg-purple bg-opacity-5">
@@ -386,43 +413,43 @@ export default function Form({
                   )}
                 </div>
               </div>
-              {form.updatingResponseAllowed && (
-                <div className="flex flex-row justify-end align-end">
-                  <button
-                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                    onClick={async () => {
-                      setUpdateResponse(true);
-                      setSubmitted(false);
-                    }}
-                  >
-                    Update response
-                  </button>
-                </div>
-              )}
-              {form.multipleResponsesAllowed && (
-                <div className="flex flex-row justify-end align-end">
-                  <button
-                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                    onClick={async () => {
-                      setSubmitAnotherResponse(true);
-                    }}
-                  >
-                    Submit another response
-                  </button>
-                </div>
-              )}
-              <a href="https://circles.spect.network/">
-                <div className="flex flex-row justify-end align-end">
-                  <button
-                    className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
-                    onClick={async () => {}}
-                  >
-                    Create your own form
-                  </button>
-                </div>
-              </a>
             </>
           )}
+          {form?.updatingResponseAllowed && (
+            <div className="flex flex-row justify-end align-end">
+              <button
+                className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                onClick={() => {
+                  setUpdateResponse(true);
+                  setSubmitted(false);
+                }}
+              >
+                Update response
+              </button>
+            </div>
+          )}
+          {form?.multipleResponsesAllowed && (
+            <div className="flex flex-row justify-end align-end">
+              <button
+                className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                onClick={() => {
+                  setSubmitAnotherResponse(true);
+                }}
+              >
+                Submit another response
+              </button>
+            </div>
+          )}
+          <a href="https://circles.spect.network/">
+            <div className="flex flex-row justify-end align-end">
+              <button
+                className="px-8 py-3 rounded-xl text-md text-zinc-400 hover:text-white hover:bg-white hover:bg-opacity-5 duration-700"
+                onClick={() => {}}
+              >
+                Create your own form
+              </button>
+            </div>
+          </a>
         </div>
         <div className="footer bg-purple bg-opacity-5">
           <Navbar />
@@ -431,7 +458,7 @@ export default function Form({
     );
   }
 
-  if (form && (!submitted || submitAnotherResponse)) {
+  if (form) {
     return (
       <Container>
         <ToastContainer />
@@ -617,12 +644,19 @@ export default function Form({
                     console.log({ data });
                     let res;
                     if (updateResponse) {
+                      console.log("update");
+                      const lastResponse =
+                        form.previousResponses[
+                          form.previousResponses.length - 1
+                        ];
+                      res = await UpdateData(
+                        form.id || "",
+                        lastResponse.slug,
+                        data
+                      );
+                    } else {
                       console.log("add");
                       res = await AddData(form.id || "", data);
-                    } else {
-                      console.log("update");
-
-                      res = await UpdateData(form.id || "", data.slug, data);
                     }
                     if (res.id) {
                       toast.success("Form submitted successfully");
